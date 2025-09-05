@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,11 +15,29 @@ import {
 } from "lucide-react";
 
 const DashboardPreview = () => {
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('animate');
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -100px 0px' }
+    );
+
+    const elements = document.querySelectorAll('.scroll-animate, .scroll-zoom, .scroll-slide-right');
+    elements.forEach((el) => observer.observe(el));
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <section className="py-20 bg-muted/30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="text-center space-y-4 mb-16">
+        <div className="text-center space-y-4 mb-16 scroll-animate">
           <h2 className="text-4xl lg:text-5xl font-bold text-foreground">
             Intelligent Dashboard
             <span className="block bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
@@ -33,7 +52,7 @@ const DashboardPreview = () => {
 
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Left Column - Citizen Dashboard */}
-          <div className="space-y-6">
+          <div className="space-y-6 scroll-slide-left">
             <h3 className="text-2xl font-semibold text-center mb-6">Citizen Dashboard</h3>
             
             {/* Active Requests */}
@@ -91,7 +110,7 @@ const DashboardPreview = () => {
           </div>
 
           {/* Center Column - Analytics */}
-          <div className="space-y-6">
+          <div className="space-y-6 scroll-zoom">
             <h3 className="text-2xl font-semibold text-center mb-6">System Analytics</h3>
 
             {/* Performance Metrics */}
@@ -156,7 +175,7 @@ const DashboardPreview = () => {
           </div>
 
           {/* Right Column - Government Dashboard */}
-          <div className="space-y-6">
+          <div className="space-y-6 scroll-slide-right">
             <h3 className="text-2xl font-semibold text-center mb-6">Government Panel</h3>
 
             {/* Priority Alerts */}
@@ -237,7 +256,7 @@ const DashboardPreview = () => {
         </div>
 
         {/* Bottom CTA */}
-        <div className="text-center mt-16">
+        <div className="text-center mt-16 scroll-animate">
           <div className="bg-gradient-to-r from-primary/5 to-secondary/5 rounded-2xl p-8 border">
             <h3 className="text-2xl font-bold mb-4">Experience the Full Dashboard</h3>
             <p className="text-muted-foreground mb-6">

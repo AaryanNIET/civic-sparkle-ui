@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
@@ -71,11 +72,29 @@ const services = [
 ];
 
 const ServicesSection = () => {
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('animate');
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
+    );
+
+    const elements = document.querySelectorAll('.scroll-animate, .scroll-zoom, .scroll-slide-left');
+    elements.forEach((el) => observer.observe(el));
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <section className="py-20 bg-gradient-to-b from-background to-muted/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="text-center space-y-4 mb-16">
+        <div className="text-center space-y-4 mb-16 scroll-animate">
           <h2 className="text-4xl lg:text-5xl font-bold text-foreground">
             Government Services
             <span className="block bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
@@ -89,7 +108,7 @@ const ServicesSection = () => {
         </div>
 
         {/* Services Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12 scroll-zoom">
           {services.map((service, index) => {
             const IconComponent = service.icon;
             return (
@@ -126,7 +145,7 @@ const ServicesSection = () => {
         </div>
 
         {/* Call to Action */}
-        <div className="text-center">
+        <div className="text-center scroll-slide-left">
           <div className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-2xl p-8 border">
             <h3 className="text-2xl font-bold mb-4">Ready to Get Started?</h3>
             <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">

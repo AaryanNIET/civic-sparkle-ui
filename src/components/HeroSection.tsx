@@ -1,13 +1,30 @@
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Users, Shield, MessageCircle } from "lucide-react";
 import heroImage from "@/assets/civic-hero.jpg";
 
 const HeroSection = () => {
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrolled = window.pageYOffset;
+      const parallaxElements = document.querySelectorAll('.parallax-element');
+      
+      parallaxElements.forEach((element, index) => {
+        const speed = 0.5 + (index * 0.1);
+        const yPos = -(scrolled * speed);
+        (element as HTMLElement).style.transform = `translateY(${yPos}px)`;
+      });
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background Image with Overlay */}
       <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat parallax-element"
         style={{ backgroundImage: `url(${heroImage})` }}
       >
         <div className="absolute inset-0 bg-gradient-to-r from-primary/90 via-primary/70 to-transparent"></div>
@@ -17,7 +34,7 @@ const HeroSection = () => {
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Left Column - Text Content */}
-          <div className="text-white space-y-8 fade-in-up">
+          <div className="text-white space-y-8 fade-in-up parallax-element">
             <div className="space-y-4">
               <h1 className="text-5xl lg:text-7xl font-bold leading-tight">
                 Connecting 
@@ -60,7 +77,7 @@ const HeroSection = () => {
           </div>
 
           {/* Right Column - Feature Cards */}
-          <div className="space-y-6 slide-in-right">
+          <div className="space-y-6 slide-in-right parallax-element">
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20 interactive-card">
               <div className="flex items-center space-x-4">
                 <div className="bg-secondary/20 p-3 rounded-lg">
