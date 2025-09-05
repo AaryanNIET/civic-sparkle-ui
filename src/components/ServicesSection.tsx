@@ -78,10 +78,13 @@ const ServicesSection = () => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             entry.target.classList.add('animate');
+          } else {
+            // Allow re-animation when scrolling back
+            entry.target.classList.remove('animate');
           }
         });
       },
-      { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
+      { threshold: 0.2, rootMargin: '0px 0px -10% 0px' }
     );
 
     const elements = document.querySelectorAll('.scroll-animate, .scroll-zoom, .scroll-slide-left');
@@ -114,7 +117,9 @@ const ServicesSection = () => {
             return (
               <Card 
                 key={index} 
-                className="interactive-card border-0 civic-shadow hover:civic-shadow"
+                className={`interactive-card border-0 civic-shadow hover:civic-shadow organic-hover subtle-shadow ${
+                  index % 2 === 0 ? 'slightly-tilted' : 'slightly-tilted-right'
+                }`}
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
                 <CardHeader className="text-center pb-4">

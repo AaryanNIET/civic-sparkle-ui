@@ -9,12 +9,16 @@ export const useScrollAnimation = () => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             entry.target.classList.add('animate');
+          } else {
+            // Remove animation class when element leaves viewport
+            // This allows animations to trigger again when scrolling back
+            entry.target.classList.remove('animate');
           }
         });
       },
       {
-        threshold: 0.1,
-        rootMargin: '0px 0px -50px 0px'
+        threshold: 0.2,
+        rootMargin: '0px 0px -10% 0px'
       }
     );
 

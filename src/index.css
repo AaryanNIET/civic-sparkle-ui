@@ -277,7 +277,7 @@
     animation: pulse-glow 2s ease-in-out infinite;
   }
 
-  /* Scroll-triggered animations */
+  /* Continuous scroll-triggered animations */
   .scroll-animate {
     opacity: 0;
     transform: translateY(30px);
@@ -320,6 +320,34 @@
   .scroll-slide-right.animate {
     opacity: 1;
     transform: translateX(0);
+  }
+
+  /* Human-like imperfections */
+  .slightly-tilted {
+    transform: rotate(-0.5deg);
+  }
+
+  .slightly-tilted-right {
+    transform: rotate(0.3deg);
+  }
+
+  .subtle-shadow {
+    box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.1), 0 4px 12px -4px rgba(0, 0, 0, 0.05);
+  }
+
+  .handwritten-feel {
+    font-variation-settings: "wght" 450;
+    letter-spacing: 0.01em;
+  }
+
+  /* Organic hover effects */
+  .organic-hover {
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .organic-hover:hover {
+    transform: translateY(-2px) rotate(0.5deg);
+    box-shadow: 0 8px 25px -8px rgba(0, 0, 0, 0.15);
   }
 
   /* Parallax Effects */

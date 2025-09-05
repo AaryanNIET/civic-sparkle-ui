@@ -21,10 +21,13 @@ const DashboardPreview = () => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             entry.target.classList.add('animate');
+          } else {
+            // Allow re-animation when scrolling back
+            entry.target.classList.remove('animate');
           }
         });
       },
-      { threshold: 0.1, rootMargin: '0px 0px -100px 0px' }
+      { threshold: 0.2, rootMargin: '0px 0px -10% 0px' }
     );
 
     const elements = document.querySelectorAll('.scroll-animate, .scroll-zoom, .scroll-slide-right');
@@ -56,7 +59,7 @@ const DashboardPreview = () => {
             <h3 className="text-2xl font-semibold text-center mb-6">Citizen Dashboard</h3>
             
             {/* Active Requests */}
-            <Card className="interactive-card">
+            <Card className="interactive-card organic-hover subtle-shadow slightly-tilted">
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <Clock className="h-5 w-5 mr-2 text-primary" />
