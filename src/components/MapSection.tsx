@@ -1,22 +1,21 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef } from 'react';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, AlertTriangle, CheckCircle, Clock, Navigation } from "lucide-react";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
-declare global {
-  interface Window {
-    google: any;
-  }
-}
+// Fix for default markers in React Leaflet
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
 
 const MapSection = () => {
-  const mapRef = useRef<HTMLDivElement>(null);
-  const [map, setMap] = useState<any>(null);
-  const [apiKey, setApiKey] = useState("");
-  const [isMapLoaded, setIsMapLoaded] = useState(false);
   const scrollAnimation = useScrollAnimation();
   const sectionRef = useRef<HTMLDivElement>(null);
 
@@ -60,75 +59,39 @@ const MapSection = () => {
     }
   ];
 
-  const initializeMap = (apiKey: string) => {
-    if (!window.google || !mapRef.current) return;
-
-    const mapInstance = new window.google.maps.Map(mapRef.current, {
-      center: { lat: 23.6102, lng: 85.2799 }, // Jharkhand center
-      zoom: 8,
-      mapTypeId: 'roadmap',
-      styles: [
-        {
-          featureType: "all",
-          elementType: "geometry.fill",
-          stylers: [{ weight: "2.00" }]
-        },
-        {
-          featureType: "all",
-          elementType: "geometry.stroke",
-          stylers: [{ color: "#9c9c9c" }]
-        }
-      ]
-    });
-
-    setMap(mapInstance);
-
-    // Add markers for pothole locations
-    potholeLocations.forEach((location) => {
-      const marker = new window.google.maps.Marker({
-        position: { lat: location.lat, lng: location.lng },
-        map: mapInstance,
-        title: location.title,
-        icon: {
-          url: getMarkerIcon(location.status),
-          scaledSize: new window.google.maps.Size(40, 40)
-        }
-      });
-
-      const infoWindow = new window.google.maps.InfoWindow({
-        content: `
-          <div style="padding: 10px; max-width: 250px;">
-            <h3 style="margin: 0 0 10px 0; color: #1f2937;">${location.title}</h3>
-            <p style="margin: 5px 0; color: #6b7280;">${location.description}</p>
-            <p style="margin: 5px 0; font-size: 12px; color: #9ca3af;">Reported: ${location.reportedDate}</p>
-            <span style="background: ${getStatusColor(location.status)}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px;">
-              ${location.status.replace('-', ' ').toUpperCase()}
-            </span>
-          </div>
-        `
-      });
-
-      marker.addListener('click', () => {
-        infoWindow.open(mapInstance, marker);
-      });
-    });
-
-    setIsMapLoaded(true);
-  };
-
-  const getMarkerIcon = (status: string) => {
+  const createCustomIcon = (status: string) => {
     const colors = {
       'pending': '#ef4444',
       'in-progress': '#f59e0b',
       'completed': '#10b981'
     };
     const color = colors[status as keyof typeof colors] || '#6b7280';
-    return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
-      <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="20" cy="20" r="15" fill="${color}" stroke="#ffffff" stroke-width="3"/>
-        <circle cx="20" cy="20" r="6" fill="#ffffff"/>
-      </svg>
-    `)}`;
+    
+    return L.divIcon({
+      html: `
+        <div style="
+          background-color: ${color};
+          width: 30px;
+          height: 30px;
+          border-radius: 50%;
+          border: 3px solid white;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        ">
+          <div style="
+            background-color: white;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+          "></div>
+        </div>
+      `,
+      className: 'custom-marker',
+      iconSize: [30, 30],
+      iconAnchor: [15, 15]
+    });
   };
 
   const getStatusColor = (status: string) => {
@@ -138,27 +101,6 @@ const MapSection = () => {
       'completed': '#10b981'
     };
     return colors[status as keyof typeof colors] || '#6b7280';
-  };
-
-  const loadGoogleMaps = (apiKey: string) => {
-    if (window.google) {
-      initializeMap(apiKey);
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
-    script.async = true;
-    script.defer = true;
-    script.onload = () => initializeMap(apiKey);
-    document.head.appendChild(script);
-  };
-
-  const handleApiKeySubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (apiKey.trim()) {
-      loadGoogleMaps(apiKey);
-    }
   };
 
   const getStatusIcon = (status: string) => {
@@ -204,56 +146,45 @@ const MapSection = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {!isMapLoaded && (
-                  <form onSubmit={handleApiKeySubmit} className="space-y-4 mb-6">
-                    <div>
-                      <label className="block text-sm font-medium mb-2">
-                        Google Maps API Key
-                      </label>
-                      <div className="flex gap-2">
-                        <Input
-                          type="text"
-                          placeholder="Enter your Google Maps API key"
-                          value={apiKey}
-                          onChange={(e) => setApiKey(e.target.value)}
-                          className="flex-1"
-                        />
-                        <Button type="submit" disabled={!apiKey.trim()}>
-                          Load Map
-                        </Button>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Get your API key from{" "}
-                        <a 
-                          href="https://console.cloud.google.com/google/maps-apis" 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-primary hover:underline"
-                        >
-                          Google Cloud Console
-                        </a>
-                      </p>
-                    </div>
-                  </form>
-                )}
-                
-                <div 
-                  ref={mapRef} 
-                  className="w-full h-96 rounded-lg border bg-muted"
-                  style={{ 
-                    background: !isMapLoaded ? 'linear-gradient(45deg, #f1f5f9 25%, transparent 25%), linear-gradient(-45deg, #f1f5f9 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #f1f5f9 75%), linear-gradient(-45deg, transparent 75%, #f1f5f9 75%)' : 'none',
-                    backgroundSize: !isMapLoaded ? '20px 20px' : 'auto',
-                    backgroundPosition: !isMapLoaded ? '0 0, 0 10px, 10px -10px, -10px 0px' : 'auto'
-                  }}
-                >
-                  {!isMapLoaded && (
-                    <div className="flex items-center justify-center h-full">
-                      <div className="text-center">
-                        <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                        <p className="text-muted-foreground">Enter API key to load map</p>
-                      </div>
-                    </div>
-                  )}
+                <div className="w-full h-96 rounded-lg border bg-muted overflow-hidden">
+                  <MapContainer
+                    center={[23.6102, 85.2799]}
+                    zoom={8}
+                    style={{ height: '100%', width: '100%' }}
+                    className="rounded-lg"
+                  >
+                    <TileLayer
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    />
+                    {potholeLocations.map((location) => (
+                      <Marker
+                        key={location.id}
+                        position={[location.lat, location.lng]}
+                        icon={createCustomIcon(location.status)}
+                      >
+                        <Popup>
+                          <div className="p-2 max-w-xs">
+                            <h3 className="font-semibold text-sm mb-2 text-gray-800">
+                              {location.title}
+                            </h3>
+                            <p className="text-xs text-gray-600 mb-2">
+                              {location.description}
+                            </p>
+                            <p className="text-xs text-gray-500 mb-2">
+                              Reported: {location.reportedDate}
+                            </p>
+                            <span 
+                              className="inline-block px-2 py-1 rounded-full text-xs text-white font-medium"
+                              style={{ backgroundColor: getStatusColor(location.status) }}
+                            >
+                              {location.status.replace('-', ' ').toUpperCase()}
+                            </span>
+                          </div>
+                        </Popup>
+                      </Marker>
+                    ))}
+                  </MapContainer>
                 </div>
               </CardContent>
             </Card>
