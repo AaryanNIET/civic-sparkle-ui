@@ -1,19 +1,99 @@
-import React, { useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import React, { useRef, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, AlertTriangle, CheckCircle, Clock, Navigation } from "lucide-react";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 
-// Fix for default markers in React Leaflet
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
+// Create a simple map without React Leaflet to avoid context issues
+const SimpleLeafletMap = ({ locations }: { locations: any[] }) => {
+  const mapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    // Initialize map
+    const map = L.map(mapRef.current).setView([23.6102, 85.2799], 8);
+
+    // Add tile layer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    // Create custom markers for each location
+    locations.forEach((location) => {
+      const color = getStatusColor(location.status);
+      
+      const customIcon = L.divIcon({
+        html: `
+          <div style="
+            background-color: ${color};
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          ">
+            <div style="
+              background-color: white;
+              width: 8px;
+              height: 8px;
+              border-radius: 50%;
+            "></div>
+          </div>
+        `,
+        className: 'custom-marker',
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
+      });
+
+      const marker = L.marker([location.lat, location.lng], { icon: customIcon }).addTo(map);
+      
+      marker.bindPopup(`
+        <div style="padding: 8px; max-width: 200px;">
+          <h3 style="margin: 0 0 8px 0; color: #1f2937; font-size: 14px; font-weight: 600;">
+            ${location.title}
+          </h3>
+          <p style="margin: 4px 0; color: #6b7280; font-size: 12px;">
+            ${location.description}
+          </p>
+          <p style="margin: 4px 0; color: #9ca3af; font-size: 10px;">
+            Reported: ${location.reportedDate}
+          </p>
+          <span style="
+            background: ${color}; 
+            color: white; 
+            padding: 2px 6px; 
+            border-radius: 8px; 
+            font-size: 10px;
+            display: inline-block;
+            margin-top: 4px;
+          ">
+            ${location.status.replace('-', ' ').toUpperCase()}
+          </span>
+        </div>
+      `);
+    });
+
+    return () => {
+      map.remove();
+    };
+  }, [locations]);
+
+  const getStatusColor = (status: string) => {
+    const colors = {
+      'pending': '#ef4444',
+      'in-progress': '#f59e0b',
+      'completed': '#10b981'
+    };
+    return colors[status as keyof typeof colors] || '#6b7280';
+  };
+
+  return <div ref={mapRef} style={{ height: '100%', width: '100%' }} className="rounded-lg" />;
+};
 
 const MapSection = () => {
   const scrollAnimation = useScrollAnimation();
@@ -58,41 +138,6 @@ const MapSection = () => {
       reportedDate: "2024-01-11"
     }
   ];
-
-  const createCustomIcon = (status: string) => {
-    const colors = {
-      'pending': '#ef4444',
-      'in-progress': '#f59e0b',
-      'completed': '#10b981'
-    };
-    const color = colors[status as keyof typeof colors] || '#6b7280';
-    
-    return L.divIcon({
-      html: `
-        <div style="
-          background-color: ${color};
-          width: 30px;
-          height: 30px;
-          border-radius: 50%;
-          border: 3px solid white;
-          box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        ">
-          <div style="
-            background-color: white;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-          "></div>
-        </div>
-      `,
-      className: 'custom-marker',
-      iconSize: [30, 30],
-      iconAnchor: [15, 15]
-    });
-  };
 
   const getStatusColor = (status: string) => {
     const colors = {
@@ -147,44 +192,7 @@ const MapSection = () => {
               </CardHeader>
               <CardContent>
                 <div className="w-full h-96 rounded-lg border bg-muted overflow-hidden">
-                  <MapContainer
-                    center={[23.6102, 85.2799]}
-                    zoom={8}
-                    style={{ height: '100%', width: '100%' }}
-                    className="rounded-lg"
-                  >
-                    <TileLayer
-                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                    />
-                    {potholeLocations.map((location) => (
-                      <Marker
-                        key={location.id}
-                        position={[location.lat, location.lng]}
-                        icon={createCustomIcon(location.status)}
-                      >
-                        <Popup>
-                          <div className="p-2 max-w-xs">
-                            <h3 className="font-semibold text-sm mb-2 text-gray-800">
-                              {location.title}
-                            </h3>
-                            <p className="text-xs text-gray-600 mb-2">
-                              {location.description}
-                            </p>
-                            <p className="text-xs text-gray-500 mb-2">
-                              Reported: {location.reportedDate}
-                            </p>
-                            <span 
-                              className="inline-block px-2 py-1 rounded-full text-xs text-white font-medium"
-                              style={{ backgroundColor: getStatusColor(location.status) }}
-                            >
-                              {location.status.replace('-', ' ').toUpperCase()}
-                            </span>
-                          </div>
-                        </Popup>
-                      </Marker>
-                    ))}
-                  </MapContainer>
+                  <SimpleLeafletMap locations={potholeLocations} />
                 </div>
               </CardContent>
             </Card>
