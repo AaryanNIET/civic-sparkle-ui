@@ -4,84 +4,11 @@ import { Badge } from "@/components/ui/badge";
 import { MapPin, AlertTriangle, CheckCircle, Clock, Navigation } from "lucide-react";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 // Create a simple map without React Leaflet to avoid context issues
 const SimpleLeafletMap = ({ locations }: { locations: any[] }) => {
   const mapRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!mapRef.current) return;
-
-    // Initialize map
-    const map = L.map(mapRef.current).setView([23.6102, 85.2799], 8);
-
-    // Add tile layer
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(map);
-
-    // Create custom markers for each location
-    locations.forEach((location) => {
-      const color = getStatusColor(location.status);
-      
-      const customIcon = L.divIcon({
-        html: `
-          <div style="
-            background-color: ${color};
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            border: 3px solid white;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-          ">
-            <div style="
-              background-color: white;
-              width: 8px;
-              height: 8px;
-              border-radius: 50%;
-            "></div>
-          </div>
-        `,
-        className: 'custom-marker',
-        iconSize: [24, 24],
-        iconAnchor: [12, 12]
-      });
-
-      const marker = L.marker([location.lat, location.lng], { icon: customIcon }).addTo(map);
-      
-      marker.bindPopup(`
-        <div style="padding: 8px; max-width: 200px;">
-          <h3 style="margin: 0 0 8px 0; color: #1f2937; font-size: 14px; font-weight: 600;">
-            ${location.title}
-          </h3>
-          <p style="margin: 4px 0; color: #6b7280; font-size: 12px;">
-            ${location.description}
-          </p>
-          <p style="margin: 4px 0; color: #9ca3af; font-size: 10px;">
-            Reported: ${location.reportedDate}
-          </p>
-          <span style="
-            background: ${color}; 
-            color: white; 
-            padding: 2px 6px; 
-            border-radius: 8px; 
-            font-size: 10px;
-            display: inline-block;
-            margin-top: 4px;
-          ">
-            ${location.status.replace('-', ' ').toUpperCase()}
-          </span>
-        </div>
-      `);
-    });
-
-    return () => {
-      map.remove();
-    };
-  }, [locations]);
 
   const getStatusColor = (status: string) => {
     const colors = {
@@ -92,7 +19,120 @@ const SimpleLeafletMap = ({ locations }: { locations: any[] }) => {
     return colors[status as keyof typeof colors] || '#6b7280';
   };
 
-  return <div ref={mapRef} style={{ height: '100%', width: '100%' }} className="rounded-lg" />;
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    console.log('Initializing map...');
+
+    // Initialize map with proper options
+    const map = L.map(mapRef.current, {
+      center: [23.6102, 85.2799],
+      zoom: 8,
+      zoomControl: true,
+      attributionControl: true,
+      scrollWheelZoom: true,
+      doubleClickZoom: true,
+      dragging: true
+    });
+
+    // Add tile layer with error handling
+    const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19,
+      minZoom: 1
+    });
+
+    tileLayer.on('tileerror', (e) => {
+      console.error('Tile loading error:', e);
+    });
+
+    tileLayer.addTo(map);
+
+    // Wait for map to be ready before adding markers
+    setTimeout(() => {
+      console.log('Adding markers...');
+      // Create custom markers for each location
+      locations.forEach((location) => {
+        const color = getStatusColor(location.status);
+        
+        const customIcon = L.divIcon({
+          html: `
+            <div style="
+              background-color: ${color};
+              width: 24px;
+              height: 24px;
+              border-radius: 50%;
+              border: 3px solid white;
+              box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            ">
+              <div style="
+                background-color: white;
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+              "></div>
+            </div>
+          `,
+          className: 'custom-marker',
+          iconSize: [24, 24],
+          iconAnchor: [12, 12]
+        });
+
+        const marker = L.marker([location.lat, location.lng], { icon: customIcon }).addTo(map);
+        
+        marker.bindPopup(`
+          <div style="padding: 8px; max-width: 200px;">
+            <h3 style="margin: 0 0 8px 0; color: #1f2937; font-size: 14px; font-weight: 600;">
+              ${location.title}
+            </h3>
+            <p style="margin: 4px 0; color: #6b7280; font-size: 12px;">
+              ${location.description}
+            </p>
+            <p style="margin: 4px 0; color: #9ca3af; font-size: 10px;">
+              Reported: ${location.reportedDate}
+            </p>
+            <span style="
+              background: ${color}; 
+              color: white; 
+              padding: 2px 6px; 
+              border-radius: 8px; 
+              font-size: 10px;
+              display: inline-block;
+              margin-top: 4px;
+            ">
+              ${location.status.replace('-', ' ').toUpperCase()}
+            </span>
+          </div>
+        `);
+      });
+
+      // Invalidate size to fix any rendering issues
+      map.invalidateSize();
+      console.log('Map initialization complete');
+    }, 100);
+
+    return () => {
+      console.log('Cleaning up map...');
+      map.remove();
+    };
+  }, [locations]);
+
+  return (
+    <div 
+      ref={mapRef} 
+      style={{ 
+        height: '100%', 
+        width: '100%', 
+        minHeight: '384px',
+        position: 'relative',
+        background: '#f8f9fa'
+      }} 
+      className="rounded-lg border"
+    />
+  );
 };
 
 const MapSection = () => {
@@ -191,7 +231,7 @@ const MapSection = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="w-full h-96 rounded-lg border bg-muted overflow-hidden">
+                <div className="w-full h-96 rounded-lg overflow-hidden relative">
                   <SimpleLeafletMap locations={potholeLocations} />
                 </div>
               </CardContent>
